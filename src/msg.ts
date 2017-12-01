@@ -43,6 +43,7 @@ export interface SCGameOver extends SC{
   won: boolean;
   tie: boolean;
   winner: string;
+  state: any;
 }
 
 // ---------------------

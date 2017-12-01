@@ -5,6 +5,9 @@ import { setTimeout } from 'timers';
 
 export const NUM_PLAYERS = 2;
 
+const TURN_TIMEOUT_MS = 100;
+const TURNS_LIMIT = 20;
+
 interface Point {
   x: number,
   y: number
@@ -77,6 +80,8 @@ export class GameInstance {
               this.receivedAction = (msg as Msg.CSAction).action as Action;
             }
           }
+        } else {
+          console.log(`${player.client.getName()} key mismatch!`);
         }
       });
       client.onConnectionClose(() => {
@@ -86,7 +91,8 @@ export class GameInstance {
 
     this.loadInitialState();
 
-    this.nextTurn();
+    this.sendStates();
+    setTimeout(() => { this.nextTurn() }, TURN_TIMEOUT_MS);
   }
 
   public onClose(callback: () => void): void {
@@ -158,21 +164,44 @@ export class GameInstance {
   }
 
   private isEndGame() {
-    return this.food.length === 0 || this.turn >= 10;
+    return this.food.length === 0 || this.turn >= TURNS_LIMIT;
   }
 
   private closeGame() {
+    const states: GameState[] = [
+      {
+        size: this.size,
+        walls: this.walls,
+        food: this.food,
+        position: this.positions[0],
+        enemy: this.positions[1],
+        score: this.score,
+        turn: this.turn
+      },
+      {
+        size: this.size,
+        walls: this.walls,
+        food: this.food,
+        position: this.positions[1],
+        enemy: this.positions[0],
+        score: this.score * -1,
+        turn: this.turn
+      }
+    ]
+
     const winnerMessage: Msg.SCGameOver = {
       type: Msg.SCType.SCGameOver,
       winner: '',
       tie: false,
-      won: true
+      won: true,
+      state: undefined
     }
     const loserMessage: Msg.SCGameOver = {
       type: Msg.SCType.SCGameOver,
       winner: '',
       tie: false,
-      won: false
+      won: false,
+      state: undefined
     }
     let winnerIdx = 0;
     let loseIdx = 0;
@@ -196,6 +225,8 @@ export class GameInstance {
       winnerMessage.tie = true;
       loserMessage.tie = true;
     }
+    winnerMessage.state = states[winnerIdx];
+    loserMessage.state = states[loseIdx];
     this.players[winnerIdx].client.sendMessage(winnerMessage);
     this.players[loseIdx].client.sendMessage(loserMessage);
     this.closedGame = true;
@@ -204,6 +235,7 @@ export class GameInstance {
   private nextTurn(): void {
     if (this.receivedAction === undefined) {
       // random action
+      console.log(`${this.players[this.currentPlayer].client.getName()} timeout!`);
       this.receivedAction = ACTIONS[Math.floor(Math.random()*ACTIONS.length)];
     }
     this.doPlayerAction(this.currentPlayer, this.receivedAction);
@@ -214,6 +246,11 @@ export class GameInstance {
     }
 
     this.receivedAction = undefined;
+    this.sendStates();
+    setTimeout(() => { this.nextTurn() }, TURN_TIMEOUT_MS);
+  }
+
+  private sendStates(): void {
     const otherPlayer: number = this.currentPlayer;
     this.currentPlayer = (this.currentPlayer + 1) % 2;
 
@@ -223,7 +260,7 @@ export class GameInstance {
       food: this.food,
       position: this.positions[this.currentPlayer],
       enemy: this.positions[otherPlayer],
-      score: this.score * this.currentPlayer,
+      score: this.score * ((-1)**this.currentPlayer),
       turn: this.turn
     }
 
@@ -233,15 +270,13 @@ export class GameInstance {
       food: this.food,
       position: this.positions[otherPlayer],
       enemy: this.positions[this.currentPlayer],
-      score: this.score * this.currentPlayer,
+      score: this.score * ((-1)**otherPlayer),
       turn: this.turn
     }
 
     this.currentKey = Math.random();
     this.players[this.currentPlayer].client.sendMessage({ type: Msg.SCType.SCRequestAction, key: this.currentKey, state: gameStateCurrentPlayer } as Msg.SCRequestAction);
     this.players[otherPlayer].client.sendMessage({ type: Msg.SCType.SCWait, state: gameStateOtherPlayer } as Msg.SCWait);
-
-    setTimeout(() => { this.nextTurn() }, 100);
   }
 
   private loadInitialState(): void {
@@ -254,24 +289,60 @@ export class GameInstance {
       { x: 3, y: 0 },
       { x: 4, y: 0 },
       { x: 5, y: 0 },
-      { x: 5, y: 1 },
-      { x: 5, y: 2 },
-      { x: 5, y: 3 },
-      { x: 5, y: 4 }
+      { x: 6, y: 0 },
+      { x: 7, y: 0 },
+      { x: 8, y: 0 },
+      { x: 9, y: 0 },
+      { x: 9, y: 1 },
+      { x: 9, y: 2 },
+      { x: 9, y: 3 },
+      { x: 9, y: 4 },
+      { x: 9, y: 5 },
+      { x: 9, y: 6 },
+      { x: 9, y: 7 },
+      { x: 9, y: 8 },
+      { x: 9, y: 9 },
+      { x: 8, y: 9 },
+      { x: 7, y: 9 },
+      { x: 6, y: 9 },
+      { x: 5, y: 9 },
+      { x: 4, y: 9 },
+      { x: 3, y: 9 },
+      { x: 2, y: 9 },
+      { x: 1, y: 9 },
+      { x: 0, y: 9 },
+      { x: 0, y: 8 },
+      { x: 0, y: 7 },
+      { x: 0, y: 6 },
+      { x: 0, y: 5 },
+      { x: 0, y: 4 },
+      { x: 0, y: 3 },
+      { x: 0, y: 2 },
+      { x: 0, y: 1 },
+      { x: 3, y: 1 },
+      { x: 3, y: 2 },
+      { x: 3, y: 3 },
+      { x: 3, y: 4 },
+      { x: 8, y: 3 },
+      { x: 7, y: 3 },
+      { x: 6, y: 3 },
+      { x: 4, y: 8 },
+      { x: 4, y: 7 },
+      { x: 4, y: 6 },
+      { x: 3, y: 6 },
+      { x: 5, y: 6 },
+      { x: 6, y: 6 }
     ];
     this.food = [
-      { x: 7, y: 1 },
-      { x: 7, y: 2 },
-      { x: 7, y: 3 },
-      { x: 7, y: 4 },
-      { x: 7, y: 5 },
-      { x: 7, y: 6 },
+      { x: 2, y: 2 },
       { x: 7, y: 7 },
-      { x: 7, y: 8 }
+      { x: 3, y: 8 },
+      { x: 8, y: 1 },
+      { x: 4, y: 4 }
     ];
     this.positions = [
-      { x: 6, y: 1 },
-      { x: 8, y: 1 }
+      { x: 1, y: 1 },
+      { x: 8, y: 8 }
     ];
     this.score = 0;
     this.turn = 0;

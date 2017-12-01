@@ -48,7 +48,7 @@ setInterval(() => {
     idx += 1;
   }
 
-}, 1000)
+}, 100)
 
 //start our server
 server.listen(process.env.PORT || 8999, () => {
