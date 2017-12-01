@@ -15,11 +15,15 @@ export class Client {
     this.name = name;
 
     this.ws.on('message', (message: string) => {
-      const msg: Msg.CS = JSON.parse(message);
-      if (this.msgCallbacks[msg.type] !== undefined) {
-        for (const callback of this.msgCallbacks[msg.type]) {
-          callback(msg);
+      try {
+        const msg: Msg.CS = JSON.parse(message);
+        if (this.msgCallbacks[msg.type] !== undefined) {
+          for (const callback of this.msgCallbacks[msg.type]) {
+            callback(msg);
+          }
         }
+      } catch(err) {
+        console.log('Error when parsing incoming message...');
       }
     });
 

@@ -1,14 +1,13 @@
 export enum SCType {
-  SCChat = 'SCChat',
   SCFindingMatch= 'SCFindingMatch',
-  SCMatchTick= 'SCMatchTick'
+  SCRequestAction = 'SCRequestAction',
+  SCWait = 'SCWait',
+  SCGameOver = 'SCGameOver'
 }
 
 export enum CSType {
   CSCreateClient = 'CSCreateClient',
-  CSChat = 'CSChat',
-  CSMoveStart = 'CSMoveStart',
-  CSMoveEnd = 'CSMoveEnd',
+  CSAction = 'CSAction'
 }
 
 export interface SC {
@@ -24,22 +23,26 @@ export interface CS {
 // SC
 // ---------------------
 
-export interface SCChat extends SC {
-  type: SCType.SCChat;
-  timestamp: string;
-  playerName: string;
-  text: string; 
-}
-
-
 export interface SCFindingMatch extends SC{
-  type: SCType.SCFindingMatch
+  type: SCType.SCFindingMatch;
 }
 
-export interface SCMatchTick extends SC{
-  type: SCType.SCMatchTick;
-  ownPosition: { x: number, y: number };
-  enemyPositions: { x: number, y: number}[];
+export interface SCRequestAction extends SC{
+  type: SCType.SCRequestAction;
+  key: number;
+  state: any;
+}
+
+export interface SCWait extends SC{
+  type: SCType.SCWait;
+  state: any;
+}
+
+export interface SCGameOver extends SC{
+  type: SCType.SCGameOver;
+  won: boolean;
+  tie: boolean;
+  winner: string;
 }
 
 // ---------------------
@@ -51,22 +54,8 @@ export interface CSCreateClient extends CS {
   name: string;
 }
 
-export interface CSChat extends CS {
-  type: CSType.CSChat;
-  text: string;
-}
-
-export enum PlayerMovement {
-  UP,
-  DOWN,
-  LEFT,
-  RIGHT
-}
-
-export interface CSMoveStart extends CS {
-  movement: PlayerMovement;
-}
-
-export interface CSMoveEnd extends CS {
-  movement: PlayerMovement;
+export interface CSAction extends CS {
+  type: CSType.CSAction;
+  action: string;
+  key: number;
 }

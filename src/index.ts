@@ -11,19 +11,21 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const clients: { id: number, ws: WebSocket }[] = [];
-
 const gameQueue: GameQueue = new GameQueue();
 const gameInstances: GameInstance[] = [];
 
 wss.on('connection', (ws: WebSocket) => {
   console.log(`Receving connection...`)
   ws.on('message', (message: string) => {
-    const msg: Msg.CS = JSON.parse(message);
-    if (msg.type === Msg.CSType.CSCreateClient) {
-      const createClientMsg: Msg.CSCreateClient = msg as Msg.CSCreateClient;
-      const newClient = new Client(ws, createClientMsg.name);
-      gameQueue.addClient(newClient);
+    try {
+      const msg: Msg.CS = JSON.parse(message);
+      if (msg.type === Msg.CSType.CSCreateClient) {
+        const createClientMsg: Msg.CSCreateClient = msg as Msg.CSCreateClient;
+        const newClient = new Client(ws, createClientMsg.name);
+        gameQueue.addClient(newClient);
+      }
+    } catch(err) {
+      console.log('Error when parsing incoming message...');
     }
   });
 });
@@ -37,12 +39,16 @@ setInterval(() => {
     gameInstances.push(newGameInstance);
   }
 
-  // Instances Cycle
+  let idx = 0;
   for (const gameInstance of gameInstances) {
-    gameInstance.tick();
+    if (gameInstance.isClosed()) {
+      gameInstances.splice(idx, 1);
+      break;
+    }
+    idx += 1;
   }
 
-}, 33)
+}, 1000)
 
 //start our server
 server.listen(process.env.PORT || 8999, () => {
